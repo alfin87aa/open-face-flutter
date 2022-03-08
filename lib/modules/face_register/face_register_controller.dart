@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:google_ml_kit/google_ml_kit.dart';
+import 'package:wakelock/wakelock.dart';
 
 import '../../index.dart';
 
@@ -22,38 +23,28 @@ class FaceRegisterController extends GetxController {
 
   late CameraDescription _camera;
   late CameraController _cameraController;
+  bool _isFrontCamera = true;
 
   CameraController get cameraController => _cameraController;
   Rx<CustomPaint> customPaint = CustomPaint(
     child: Container(),
   ).obs;
+  RxBool isCameraReady = false.obs;
 
   @override
   void onInit() async {
     super.onInit();
-    for (var i = 0; i < cameras.length; i++) {
-      if (cameras[i].lensDirection == CameraLensDirection.front) {
-        _camera = cameras[i];
-      }
-    }
-    _cameraController = CameraController(
-      _camera,
-      ResolutionPreset.max,
-      enableAudio: false,
-    );
-    await _cameraController.initialize().then((value) => {
-          _cameraController
-              .startImageStream((image) => _processCameraImage(image))
-        });
-
+    _camera = cameras[1];
+    await _startCamera();
+    await Wakelock.disable();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
   }
 
   @override
   void onClose() async {
     super.onClose();
-    await _cameraController.stopImageStream();
-    await _cameraController.dispose();
+    await _stopCamera();
+    await Wakelock.enable();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
         overlays: SystemUiOverlay.values);
   }
@@ -61,29 +52,38 @@ class FaceRegisterController extends GetxController {
   Future<XFile> takePicture() async {
     await _cameraController.stopImageStream();
     XFile file = await _cameraController.takePicture();
+
     return file;
   }
 
-  InputImageRotation rotationIntToImageRotation(int rotation) {
-    switch (rotation) {
-      case 90:
-        return InputImageRotation.Rotation_90deg;
-      case 180:
-        return InputImageRotation.Rotation_180deg;
-      case 270:
-        return InputImageRotation.Rotation_270deg;
-      default:
-        return InputImageRotation.Rotation_0deg;
+  Future switchLiveCamera() async {
+    if (_isFrontCamera) {
+      _camera = cameras[0];
+    } else {
+      _camera = cameras[1];
     }
+    _isFrontCamera = !_isFrontCamera;
+    await _stopCamera();
+    await _startCamera();
   }
 
-  Size getImageSize() {
-    assert(!_cameraController.value.isInitialized,
-        'Camera controller not initialized');
-    return Size(
-      _cameraController.value.previewSize!.height,
-      _cameraController.value.previewSize!.width,
+  Future _startCamera() async {
+    _cameraController = CameraController(
+      _camera,
+      ResolutionPreset.max,
+      enableAudio: false,
     );
+    await _cameraController.initialize().then((_) => {
+          _cameraController
+              .startImageStream((image) => _processCameraImage(image))
+        });
+    isCameraReady.value = true;
+  }
+
+  Future _stopCamera() async {
+    isCameraReady.value = false;
+    await _cameraController.stopImageStream();
+    await _cameraController.dispose();
   }
 
   Future _processCameraImage(CameraImage image) async {
