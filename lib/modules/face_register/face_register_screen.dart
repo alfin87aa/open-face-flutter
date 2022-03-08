@@ -15,7 +15,7 @@ class FaceRegisterScreen extends GetView<FaceRegisterController> {
     return Stack(
       fit: StackFit.expand,
       children: <Widget>[
-        CameraPreview(controller.cameraService.cameraController),
+        CameraPreview(controller.cameraController),
         controller.customPaint.value
       ],
     );

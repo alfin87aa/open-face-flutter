@@ -8,14 +8,22 @@ import 'package:google_ml_kit/google_ml_kit.dart';
 import '../../index.dart';
 
 class FaceRegisterController extends GetxController {
-  CameraService cameraService;
-  FaceRegisterController({required this.cameraService});
+  List<CameraDescription> cameras;
+  FaceRegisterController({
+    required this.cameras,
+  });
+
   bool _isBusy = false;
   final FaceDetector _faceDetector =
       GoogleMlKit.vision.faceDetector(const FaceDetectorOptions(
     enableContours: true,
     enableClassification: true,
   ));
+
+  late CameraDescription _camera;
+  late CameraController _cameraController;
+
+  CameraController get cameraController => _cameraController;
   Rx<CustomPaint> customPaint = CustomPaint(
     child: Container(),
   ).obs;
@@ -23,19 +31,59 @@ class FaceRegisterController extends GetxController {
   @override
   void onInit() async {
     super.onInit();
-    cameraService.startLive().then((_) {
-      cameraService.cameraController
-          .startImageStream((CameraImage image) => _processCameraImage(image));
-    });
+    for (var i = 0; i < cameras.length; i++) {
+      if (cameras[i].lensDirection == CameraLensDirection.front) {
+        _camera = cameras[i];
+      }
+    }
+    _cameraController = CameraController(
+      _camera,
+      ResolutionPreset.max,
+      enableAudio: false,
+    );
+    await _cameraController.initialize().then((value) => {
+          _cameraController
+              .startImageStream((image) => _processCameraImage(image))
+        });
+
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
   }
 
   @override
-  void onClose() {
+  void onClose() async {
     super.onClose();
-    cameraService.stopLive();
+    await _cameraController.stopImageStream();
+    await _cameraController.dispose();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
         overlays: SystemUiOverlay.values);
+  }
+
+  Future<XFile> takePicture() async {
+    await _cameraController.stopImageStream();
+    XFile file = await _cameraController.takePicture();
+    return file;
+  }
+
+  InputImageRotation rotationIntToImageRotation(int rotation) {
+    switch (rotation) {
+      case 90:
+        return InputImageRotation.Rotation_90deg;
+      case 180:
+        return InputImageRotation.Rotation_180deg;
+      case 270:
+        return InputImageRotation.Rotation_270deg;
+      default:
+        return InputImageRotation.Rotation_0deg;
+    }
+  }
+
+  Size getImageSize() {
+    assert(!_cameraController.value.isInitialized,
+        'Camera controller not initialized');
+    return Size(
+      _cameraController.value.previewSize!.height,
+      _cameraController.value.previewSize!.width,
+    );
   }
 
   Future _processCameraImage(CameraImage image) async {
@@ -48,9 +96,8 @@ class FaceRegisterController extends GetxController {
     final Size imageSize =
         Size(image.width.toDouble(), image.height.toDouble());
 
-    final camera = cameraService.cameraDescription;
     final imageRotation =
-        InputImageRotationMethods.fromRawValue(camera.sensorOrientation) ??
+        InputImageRotationMethods.fromRawValue(_camera.sensorOrientation) ??
             InputImageRotation.Rotation_0deg;
 
     final inputImageFormat =
