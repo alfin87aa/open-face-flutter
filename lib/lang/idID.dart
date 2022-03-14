@@ -7,4 +7,7 @@ const Map<String, String> idID = {
   'recognition': 'Pengenalan',
   'comparison': 'Perbandingan',
   'sync': 'Sinkronkan',
+  'warning': 'Peringatan',
+  'no face detection': 'Tidak Ada Wajah Yang Terdeteksi!',
+  'multiple face detection': 'Wajah Terdeteksi Lebih Dari 1!',
 };

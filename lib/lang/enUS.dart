@@ -7,4 +7,7 @@ const Map<String, String> enUS = {
   'recognition': 'Recognition',
   'comparison': 'Comparison',
   'sync': 'Sync',
+  'warning': 'Warning',
+  'no face detection': 'No Face Detection!',
+  'multiple face detection': 'Multiple Face Detection!',
 };

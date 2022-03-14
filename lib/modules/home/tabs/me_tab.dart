@@ -143,7 +143,7 @@ class MeTab extends GetView<HomeController> {
                 title: 'Cards',
                 icon: 'assets/icons/icon_discover.svg',
                 onTap: () {
-                  Get.toNamed(Routes.HOME + Routes.CARDS);
+                  Get.toNamed(Routes.HOME);
                 },
               ),
               IconTitleItem(

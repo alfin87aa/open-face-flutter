@@ -46,6 +46,7 @@ class App extends StatelessWidget {
 
 Future<void> initServices() async {
   await Get.putAsync(() => CameraService().init());
+  await Get.putAsync(() => FacenetService().init());
 }
 
 ThemeData _darkTheme = ThemeData(

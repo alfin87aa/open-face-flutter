@@ -6,5 +6,5 @@ abstract class Routes {
   static const SPLASH = '/';
   static const FACE_REGISTER = '/FACE-REGISTER';
   static const HOME = '/HOME';
-  static const CARDS = '/cards';
+  static const REGISTER_PREVIEW = '/REGISTER-PREVIEW';
 }
